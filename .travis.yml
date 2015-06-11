@@ -31,6 +31,38 @@ android:
     - sys-img-armeabi-v7a-android-22
     - extra
 
+env:
+  global:
+    # COVERITY_SCAN_TOKEN
+    # ** specific to your project **
+    - secure: "sMHI0aCnuJyvIgPpXfReqg"
+
+addons:
+  coverity_scan:
+
+    # GitHub project metadata
+    # ** specific to your project **
+    project:
+      name: futurice/cascade
+      version: 0.1
+      description: Reactive Cascde library for Android
+
+    # Where email notification of build analysis results will be sent
+    notification_email: paul.houghton@futurice.com
+
+    # Commands to prepare for build_command
+    # ** likely specific to your build **
+    build_command_prepend: ./configure
+
+    # The command that will be added as an argument to "cov-build" to compile your project for analysis,
+    # ** likely specific to your build **
+    build_command: gradle clean build
+
+    # Pattern to match selecting branches that will run analysis. We recommend leaving this set to 'coverity_scan'.
+    # Take care in resource usage, and consider the build frequency allowances per
+    #   https://scan.coverity.com/faq#frequency
+    branch_pattern: coverity_scan
+
 before_script:
     - echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a --skin WVGA800
     - emulator -avd test -no-skin -no-audio -no-window &
@@ -39,4 +71,6 @@ before_script:
     - cd ./ReactiveCascade
 
 script:
-    - gradle clean build connectedCheck
+    - gradle clean
+    - cov-build --dir cov-int gradle build
+    - gradle connectedCheck
