@@ -73,11 +73,6 @@ public final class NetUtil {
         wifiManager = (WifiManager) context.getSystemService(Activity.WIFI_SERVICE);
     }
 
-//    @NonNull
-//    public <IN, OUT> IAltFuture<IN, IN> execAfterPendingReadsAsync(@NonNull final IAltFuture<IN, OUT> delayedAltFuture) {
-//        return new AltFuture<IN, IN>(netReadThreadType, delayedAltFuture::fork);
-//    }
-
     @NonNull
     public IAltFuture<?, Response> getAsync(@NonNull final String url) {
         return netReadThreadType.then(() -> get(url, null));
@@ -102,7 +97,7 @@ public final class NetUtil {
     public Response get(
             @NonNull final String url,
             @Nullable final Collection<Header> headers) throws IOException {
-        dd(origin, "get " + url);
+        vv(origin, "get " + url);
         final Call call = setupCall(url, builder -> addHeaders(builder, headers));
 
         return execute(call);
@@ -294,7 +289,7 @@ public final class NetUtil {
         }
 
         for (Header header : headers) {
-            builder.addHeader(header.name.toString(), header.value.toString());
+            builder.addHeader(header.name.utf8(), header.value.utf8());
         }
     }
 
@@ -322,7 +317,7 @@ public final class NetUtil {
             return get(location);
         }
         if (!response.isSuccessful()) {
-            final String s = "Unexpected response code " + response;
+            final String s = "Unexpected response code: " + response;
             final IOException e = new IOException(s);
 
             ee(origin, s, e);

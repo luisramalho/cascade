@@ -1,16 +1,22 @@
 package com.futurice.cascade.util;
 
+import android.support.annotation.Nullable;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.LargeTest;
 
 import com.futurice.cascade.AsyncAndroidTestCase;
+import com.futurice.cascade.i.IGettable;
 import com.futurice.cascade.i.functional.IAltFuture;
 import com.squareup.okhttp.Response;
+import com.squareup.okhttp.internal.spdy.Header;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static com.futurice.cascade.Async.WORKER;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import static com.futurice.cascade.Async.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -30,10 +36,6 @@ public class NetUtilTest extends AsyncAndroidTestCase {
         super.setUp();
 
         setDefaultTimeoutMillis(15000); // Give real net traffic enough time to complete
-    }
-
-    public void testExecAfterPendingReadsAsync() throws Exception {
-
     }
 
     @Test
@@ -57,8 +59,22 @@ public class NetUtilTest extends AsyncAndroidTestCase {
         assertThat(getNetUtil().get("http://httpbin.org/").body().bytes().length).isGreaterThan(100);
     }
 
-    public void testGet1() throws Exception {
+    @Test
+    public void testGetCustomHeaders() throws Exception {
+        Collection<Header> headers = new ArrayList<>();
+        Header header = new Header("Cookie", "Value");
+        headers.add(header);
+        assertThat(getNetUtil().get("http://httpbin.org/headers", headers).body().string()).contains("Value");
+    }
 
+    public void testIGettableGet() throws Exception {
+        assertThat(getNetUtil().get(new IGettable<String>() {
+            @Nullable
+            @Override
+            public String get() {
+                return "http://httpbin.org/";
+            }
+        }).body().bytes().length).isGreaterThan(100);
     }
 
     public void testGetAsync2() throws Exception {
