@@ -1,12 +1,12 @@
 package com.futurice.cascade.util;
 
-import android.support.annotation.Nullable;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.LargeTest;
 
 import com.futurice.cascade.AsyncAndroidTestCase;
-import com.futurice.cascade.i.IGettable;
 import com.futurice.cascade.i.functional.IAltFuture;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 import com.squareup.okhttp.internal.spdy.Header;
 
@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.futurice.cascade.Async.*;
+import static com.futurice.cascade.Async.WORKER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -39,22 +39,6 @@ public class NetUtilTest extends AsyncAndroidTestCase {
     }
 
     @Test
-    public void testGetAsync() throws Exception {
-        IAltFuture<?, Response> iaf = getNetUtil().getAsync("http://httpbin.org/get")
-                .fork();
-        assertThat(awaitDone(iaf).isSuccessful()).isTrue();
-    }
-
-    @Test
-    public void testGetAsyncFromWORKER() throws Exception {
-        IAltFuture<?, Response> iaf = WORKER
-                .from("http://httpbin.org/get")
-                .then(getNetUtil().getAsync())
-                .fork();
-        assertThat(awaitDone(iaf).isSuccessful()).isTrue();
-    }
-
-    @Test
     public void testGet() throws Exception {
         assertThat(getNetUtil().get("http://httpbin.org/").body().bytes().length).isGreaterThan(100);
     }
@@ -68,17 +52,52 @@ public class NetUtilTest extends AsyncAndroidTestCase {
     }
 
     public void testIGettableGet() throws Exception {
-        assertThat(getNetUtil().get(new IGettable<String>() {
-            @Nullable
-            @Override
-            public String get() {
-                return "http://httpbin.org/";
-            }
-        }).body().bytes().length).isGreaterThan(100);
+        assertThat(getNetUtil().get(() -> "http://httpbin.org/").body().bytes().length).isGreaterThan(100);
     }
 
-    public void testGetAsync2() throws Exception {
+    @Test
+    public void testGetAsync() throws Exception {
+        IAltFuture<?, Response> iaf = getNetUtil().getAsync("http://httpbin.org/get")
+                .fork();
+        assertThat(awaitDone(iaf).isSuccessful()).isTrue();
+    }
 
+    @Test
+    public void testGetAsyncChained() throws Exception {
+        IAltFuture<?, Response> iaf = WORKER
+                .from("http://httpbin.org/get")
+                .then(getNetUtil().getAsync())
+                .fork();
+        assertThat(awaitDone(iaf).isSuccessful()).isTrue();
+    }
+
+    public void testGetAsyncChainedWithHeaders() throws Exception {
+        Collection<Header> headers = new ArrayList<>();
+        Header header = new Header("Cookie", "AnotherValue");
+        headers.add(header);
+        IAltFuture<?, Response> iaf = WORKER
+                .from("http://httpbin.org/headers")
+                .then(getNetUtil().getAsync(headers))
+                .fork();
+        assertThat(awaitDone(iaf).body().string()).contains("AnotherValue");
+    }
+
+    public void testPut() throws Exception {
+        assertThat(getNetUtil().put(
+                "http://httpbin.org/put",
+                RequestBody.create(MediaType.parse("Text/plain"), "SomeText")
+        ).body().string()).contains("SomeText");
+    }
+
+    public void testPutWithHeaders() throws Exception {
+        Collection<Header> headers = new ArrayList<>();
+        Header header = new Header("Cookie", "Bacon");
+        headers.add(header);
+        assertThat(getNetUtil().put(
+                "http://httpbin.org/put",
+                headers,
+                RequestBody.create(MediaType.parse("Text/plain"), "Eggs")
+        ).body().string()).contains("Eggs");
     }
 
     public void testPutAsync() throws Exception {
@@ -93,10 +112,6 @@ public class NetUtilTest extends AsyncAndroidTestCase {
 
     }
 
-    public void testPut() throws Exception {
-
-    }
-
     public void testPutAsync3() throws Exception {
 
     }
@@ -106,10 +121,6 @@ public class NetUtilTest extends AsyncAndroidTestCase {
     }
 
     public void testPutAsync5() throws Exception {
-
-    }
-
-    public void testPut1() throws Exception {
 
     }
 
